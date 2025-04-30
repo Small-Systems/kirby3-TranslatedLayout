@@ -1,16 +1,17 @@
 # Kirby TranslatedLayout field plugin
 
-This plugin brings translation logics into the native `layouts` and `blocks` fields.  
+This plugin brings translation logics into the native `layouts` fields.  
 
 ### Experimental
 
 While the kirby team is waiting for some heavy refactoring for recursively bringing translation logics into their "complex fields", this plugin aims to provide a temporary workaround for multi-language websites.
 
-This is an experimental draft trying to bring some translation logic to blocks, columns and layouts.  
+This is an experimental draft trying to bring some translation logic to blocks, columns and layouts. 
 It turns out to be quite powerful already with just a minimal set of changes compared to the native field behaviour.
 
 **Current state** :  
-Tested on a single configuration, works well but not extensively tested. Therefore, please note that **there remains a risk of data loss**. (Do not use without backups!)
+Tested on a single configuration, works well but not extensively tested. Therefore, please note that **there remains a risk of data loss**. (Do not use without backups!)  
+There is no `translatedblocks` fields nor `toTranslatedBlocks` method (yet?), please use layouts instead.
 
 ### Implementation
 
@@ -20,14 +21,15 @@ Tested on a single configuration, works well but not extensively tested. Therefo
     - **Fallback** : If a block has no translation, it's replaced with the default language.
     - **Sanitation** : If a block translation is not available in the default language, it's removed. All blocks from the default language are guaranteed to be available for translation in the panel.
     - **Panel GUI** : Non-translateable fields and blocks are disabled, preventing panel users from changing the layout and adding blocks in translations.
-    - **Data** : The syncronized translation is saved as a blocks collection and works fine with the native `$field->toLayout()` & `$field->toBlocks()`. Some disk space is saved by not writing the layout data multiple times.
+    - **Data** : The syncronized translation is saved as a blocks and columns array and parsed on retrieval. (this saves some disk space and makes data more readable).
 
 ![Screenshot of Kirby 3 plugins TranslatedLayout](TranslatedLayout.gif)
 
 ## Requirements
 
 - Version `0.3.3-beta` : Kirby 3.8 or above.
-- Version `1.0.0` : Kirby 5 or above. *(maybe Kirby4 compatible?)*
+- *(Kirby 4 compatibility should be easy to implement; mainly a few changed function signatures and namespace renames)*
+- Version `1.0.0` : Kirby 5 or above. 
 
 - **Note**: This plugin heavily relies on the use of the panel. If you'd like to manually edit a `translatedlayout` field via the text content file, it's not recommended to use this plugin, as it's probably not recommended to use blocks without the panel. (Meanwhile, it still is possible, and this plugin even simplifies the translation files).  
 
@@ -43,12 +45,16 @@ _Choose one:_
 
 ### Import existing data
 
+- The default language saves as the native Kirby layouts field.
+- Translations have a different content structure and only save the translated block fields.
+
 **Warning!** If you already have a layout with translated content, switching to this field will erase all translations unless you manually give the same `id` to blocks/rows/columns in the translations data structure. There is no automatic script available.  
+The same happens when you change the default language so make sure it's correct, and to never change it again.
 
 
 ### Blueprints
 
-In your page blueprints, you can simply replace a `type: layout` or `type: blocks` field by `type: translatedlayout` or `type: translatedblocks`. Read more about how to use the respective fields in the official Kirby docs.
+In your page blueprints, you can simply replace a `type: layout` field by `type: translatedlayout`. Read more about how to use the respective fields in the official Kirby docs.
 
 The only difference is an extra `translate` property on fields, please refer to this example:
 
@@ -142,7 +148,7 @@ To setup your own fieldsets, prefer copy/pasting from [translatedlayoutwithfield
 
 ### Templates
 
-As for the native `LayoutField` and `BlocksField`, use : `$field->toLayout()`, `$field->toBlocks()`, etc. in your templates to fetch the field contents. There is absolutely no difference as the plugin acts during the data parse state.
+Use `$field->toTranslatedLayout()` in your templates to fetch & render the field contents. Like the native `LayoutField`'s `toLayouts`, a `Kirby\Cms\Layouts` object is returned. There is absolutely no difference as the plugin acts during the data parse state.
 
 ## Options
 
@@ -161,10 +167,11 @@ There are no options available yet. Would you like to contribute some ?
 ## Feature ideas
 
 - Plugin options : Set rather to fill with (untranslated) default language, or leave the translateable blocks empty ? (on translation creation only).
+- Write some test cases.
 
 ## Similar Plugins
 
-- [Synced-Structure](https://gist.github.com/lukaskleinschmidt/1c0b94ffab51d650b7c7605a4d25c213) : Syncs structures across languages using UUIDs.
+- [Synced-Structure](https://gist.github.com/lukaskleinschmidt/1c0b94ffab51d650b7c7605a4d25c213) : Syncs structures across languages using UUIDs. Note: _This method doesn't work with `Layouts` and `Blocks` fields because they use the `FieldClass` instead of Kirby's field blueprints._
 
 ## License
 

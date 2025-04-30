@@ -1,8 +1,9 @@
 <?php
-use \Kirby\Form\Field\LayoutField; // maybe not needed ?
 use \Kirby\Data\Data;
-//use \Kirby\Cms\App;
+use Kirby\Cms\Fieldsets;
+use Kirby\Cms\Fieldset;
 
+require_once(__DIR__ . '/src/classes/TranslatedLayoutHelpers.php');
 require_once(__DIR__ . '/src/classes/TranslatedLayoutField.php');
 require_once(__DIR__ . '/src/classes/TranslatedBlocksField.php');
 
@@ -22,6 +23,82 @@ Kirby::plugin(
         // See: https://github.com/getkirby/kirby/issues/3961
         'translatedlayout' => 'TranslatedLayoutField',
         'translatedblocks' => 'TranslatedBlocksField',
+    ],
+    'fieldMethods' => [
+
+        // Content field method to retrieve the content as toLayouts
+        'toTranslatedLayouts' => function(\Kirby\Content\Field $field) : \Kirby\Cms\Layouts {
+            // Native behaviour
+            if(
+                // Single lang has normal behaviour
+                ( $field->model()->kirby()->multilang() === false ) ||
+                // Default lang has normal behaviour.
+                ( $field->model()->translation()->language()->isDefault() )
+            ){
+                return $field->toLayouts();
+            }
+            // Translation behaviour
+            $returnLayouts = [];//null;
+
+            // Grab primary language content
+            $defaultLangCode = $field->model()->kirby()->defaultLanguage()->code();
+            $defaultLangTranslation = $field->model()->translation($defaultLangCode);
+
+            // Check content
+            if( !$defaultLangTranslation || !$defaultLangTranslation->version()->exists() ){
+                $returnLayouts = [];
+            }
+            // When the field doesn't exist in default lang : exit early
+            else if(!array_key_exists($field->key(), $defaultLangTranslation->content())){
+                $returnLayouts = [];
+            }
+
+            // Grab translation data
+            $translationValue = Kirby\Data\Data::decode($field->value(), type: 'json', fail: false);
+
+            // Continue with translation data ?
+            if(!$returnLayouts){
+
+                // Fetch primary lang data
+                $defaultLangValue = \Kirby\Data\Data::decode($defaultLangTranslation->content()[$field->key()], type: 'json', fail: false)??[];
+
+                // Start with primary language content (fallback return)
+                $returnLayouts = \Kirby\Cms\Layouts::factory($defaultLangValue, ['parent' => $field->parent(), 'field'=>$field]);
+                $returnLayoutsArray = $returnLayouts->toArray();
+
+                // Check translation data
+                if(
+                    $translationValue && is_array($translationValue) && // Got data ?
+                    array_key_exists(TranslatedLayoutField::BLOCKS_KEY, $translationValue) && array_key_exists(TranslatedLayoutField::LAYOUTS_KEY, $translationValue) || // Got expected columns ?
+                    !is_array($translationValue[TranslatedLayoutField::BLOCKS_KEY]) && !is_array($translationValue[TranslatedLayoutField::LAYOUTS_KEY]) // Are the arrays ?
+                ){
+                    // Inject translation data
+                    $bp = getFieldBlueprintSelf($field, false); // <-- unparsed !!!
+                    
+                    // Parse fieldsets to know translation config (from user blueprint or field defaults)
+                    $fieldsets = Fieldsets::factory($bp['fieldsets'], [
+                        'parent' => $field->parent(),
+                        'field' => $field,
+                    ]);
+
+                    // Like Kirby\Form\Layout::setSettings();
+                    // $settings = $column['attrs'];
+                    $attrsFieldSet = null;
+                    if(array_key_exists('settings', $bp) && array_key_exists('fields', $bp['settings'])){
+                        $settings = $bp['settings'];//['fields'];
+                        $settings['type']   = 'layout';
+                        $settings['parent'] = $field->parent();
+                        $attrsFieldSet = Fieldset::factory($settings);
+                    }
+                    
+                    //$bp = getFieldBlueprint();
+                    $returnLayouts = syncLanguages($returnLayoutsArray, $translationValue, $fieldsets, $attrsFieldSet);
+                }
+            }
+
+            return \Kirby\Cms\Layouts::factory($returnLayouts, ['parent' => $field->parent(), 'field'=> $field]);
+        },
+
     ],
     'blueprints' => [
 

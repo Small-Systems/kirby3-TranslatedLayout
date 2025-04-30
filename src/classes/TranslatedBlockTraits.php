@@ -39,9 +39,15 @@ trait TranslatedBlocksTraits {
         return $fieldsets;
     }
 
-    private static function adaptFieldsetToTranslation(?array $fieldset) : ?array {
+    // Force-disables non-translateable fields
+    private static function adaptFieldsetToTranslation(null|string|array $fieldset) : null|string|array {
         // Set translations ?
         // Already set via blueprint YML ? if using: "extends: translatedlayoutwithfields" ? Ensure to set defaults ?
+
+        // Blueprint is not yet expanded here. Todo: What if the default should be translateable ?
+        if(is_string($fieldset) === true){
+            return $fieldset; // Leave as is, no translation logic for now !
+        }
 
         // Set disabed ? Saveable ? if translate is false. So the field is disabled for editing in panel
         if($fieldset && isset($fieldset['translate']) && $fieldset['translate'] === false ){

@@ -20,54 +20,53 @@ export default {
 	props: {
 		_devInfo: {
 			// Vue-Dev-info, to clarify that this is not the original, for devs debugging with the inspector.
+			// `_` to be on top of props
 			type: String,
 			default: "Warning: I'm not the default k-blocks. I have been replaced by a k-translated-blocks !",
 		},
 	},
 	mounted(){
-		// Invert functions so ours are called
-		// Note : Important to do this on mounted(), beforeCreate and created() both seem too early, some aren't correctly replaced.
-		// this.chooseNative = this.choose; this.choose = this.chooseCustom;
-		this.invertCustomAndNativeFunctions([
-			'choose',
-			'addToBatch',
-			'onKey',
-			'onPaste',
-			'paste',
-			'pasteboard',
-			'append',
-			'remove',
-			'removeAll',
-			'convert',
-			'move',
-			'copyAll',
-			'duplicate',
-			'chooseToConvert',
-			'add',
-			'removeAll',
-			'removeSelected',
-		]);
+		// Only mutate blocks when within a k-translated-*
+		if(this.isWithinTranslatedComponent){
+			// Invert functions so ours are called
+			// Note : Important to do this on mounted(), beforeCreate and created() both seem too early, some aren't correctly replaced.
+			// this.chooseNative = this.choose; this.choose = this.chooseCustom;
+			this.invertCustomAndNativeFunctions([
+				'choose',
+				// 'addToBatch',
+				'chooseToConvert',
+				'onKey',
+				'onPaste',
+				'paste',
+				'pasteboard',
+				// 'append',
+				'remove',
+				'removeAll',
+				'convert',
+				'move',
+				'copy',
+				'copyAll',
+				'duplicate',
+				'chooseToConvert',
+				'add',
+				'removeAll',
+				'removeSelected',
+			]);
+		}
 	},
 	// Cancel some native methods that we don't need ?
 	methods: {
-		// Helper for replacing native methods on mount.
-		// Before: Native functions : myFunc,		Custom functions : myFuncCustom.
-		// After : Native functions : myFuncNative,	Custom functions : myFuncCustom & myFunc
-		// So we replace the native functions, still being able to call them.
-		invertCustomAndNativeFunctions(funcNames){
-			for(const fn of funcNames){
-				if(this[fn + 'Native']) continue; // if Native is set, this has already been bound
-				this[fn + 'Native'] = this[fn]; this[fn] = this[fn + 'Custom'];
-			}
-		},
 		// Never open the choose dialog in translations
 		chooseCustom(index){
 			return this.layoutEditingIsDisabled ? null : this.chooseNative(index);
 		},
-		// Never select batches for manipulation
-		addToBatchCustom(block){
-			return this.layoutEditingIsDisabled ? null : this.addToBatchNative(block);
+		chooseToConvertCustom(block){
+			return this.layoutEditingIsDisabled ? null : this.chooseToConvertNative(block);
 		},
+		// // Never select batches for manipulation
+		// addToBatchCustom(block){
+		// 	return this.layoutEditingIsDisabled ? null : this.addToBatchNative(block);
+		// },
 		// Replace batch-click by normal click (ignore meta key setting the flag)
 		onKeyCustom(block, event = null){
 			if(this.layoutEditingIsDisabled){
@@ -101,9 +100,9 @@ export default {
 			return this.layoutEditingIsDisabled ? false : this.pasteboardNative();
 		},
 		// Ensure append is never called by others or self
-		appendCustom(what, index){
-			return this.layoutEditingIsDisabled ? null : this.appendNative(what, index);
-		},
+		// appendCustom(what, index){
+		// 	return this.layoutEditingIsDisabled ? null : this.appendNative(what, index);
+		// },
 		// Never remove blocks
 		removeCustom(block){
 			return this.layoutEditingIsDisabled ? null : this.removeNative(block);
@@ -119,6 +118,10 @@ export default {
 		// Never move blocks
 		moveCustom(event){
 			return this.layoutEditingIsDisabled ? null : this.moveNative(event);
+		},
+		// Never copy all blocks (todo : maybe some users with to copy translations to somewhere?)
+		copyCustom(e){
+			return this.layoutEditingIsDisabled ? null : this.copyNative(e);
 		},
 		// Never copy blocks (todo : maybe some users with to copy translations to somewhere?)
 		copyAllCustom(){

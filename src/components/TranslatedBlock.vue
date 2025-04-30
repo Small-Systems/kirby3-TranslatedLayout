@@ -1,50 +1,65 @@
 <template>
 	<div
 		ref="container"
-		:class="'k-block-container-type-' + type"
-		:data-batched="isBatched"
-		:data-disabled="fieldset.disabled"
+		:class="[
+			'k-block-container',
+			'k-block-container-fieldset-' + type,
+			containerType ? 'k-block-container-type-' + containerType : '',
+			$attrs.class
+		]"
+		:data-disabled="isDisabled"
 		:data-hidden="isHidden"
 		:data-id="id"
-		:data-last-in-batch="isLastInBatch"
+		:data-last-selected="isLastSelected"
 		:data-selected="isSelected"
 		:data-translate="fieldset.translate"
-		class="k-block-container"
-		tabindex="0"
-		@keydown.ctrl.shift.down.prevent="$emit('sortDown')"
-		@keydown.ctrl.shift.up.prevent="$emit('sortUp')"
-		@focus="$emit('focus')"
-		@focusin="onFocusIn"
+		:style="$attrs.style"
+		:tabindex="isDisabled ? null : 0"
+		@keydown.ctrl.j.prevent.stop="$emit('merge')"
+		@keydown.ctrl.alt.down.prevent.stop="$emit('selectDown')"
+		@keydown.ctrl.alt.up.prevent.stop="$emit('selectUp')"
+		@keydown.ctrl.shift.down.prevent.stop="$emit('sortDown')"
+		@keydown.ctrl.shift.up.prevent.stop="$emit('sortUp')"
+		@keydown.ctrl.backspace.stop="backspace"
+		@focus.stop="onFocus"
+		@focusin.stop="onFocusIn"
 	>
-		<div :class="className" class="k-block">
+		<div :class="className" :data-disabled="isDisabled" class="k-block">
 			<component
 				:is="customComponent"
 				ref="editor"
 				v-bind="$props"
+				:tabs="tabs"
 				v-on="listeners"
 			/>
 		</div>
 
-		<!-- new block compared to native template -->
-		<k-dropdown class="k-block-options" v-if="layoutEditingIsDisabled && isEditable">
+		<!-- new element compared to native template -->
+		<k-dropdown class="k-toolbar k-block-options" v-if="layoutEditingIsDisabled && isEditable">
 			<k-button
 				v-if="isEditable"
 				:tooltip="$t('edit')"
 				icon="edit"
 				class="k-block-options-button"
-				@click="open"
+				@click="listenersForOptions.open()"
 			/>
 		</k-dropdown>
-		<k-block-options v-else
+		<!-- new v-else-if compared to native template -->
+		<k-block-options
+			v-else-if="!isDisabled"
 			ref="options"
-			:is-batched="isBatched"
-			:is-editable="isEditable"
-			:is-full="isFull"
-			:is-hidden="isHidden"
-			v-on="listeners"
-		/><!-- new v-else compared to native template -->
+			v-bind="{
+				isBatched,
+				isEditable,
+				isFull,
+				isHidden,
+				isMergable,
+				isSplitable: isSplitable()
+			}"
+			v-on="listenersForOptions"
+		/>
 
-		<k-form-drawer
+		<!-- <k-form-drawer
 			v-if="isEditable && !isBatched"
 			:id="id"
 			ref="drawer"
@@ -87,7 +102,7 @@
 			ref="removeDialog"
 			:text="$t('field.blocks.delete.confirm')"
 			@submit="remove"
-		/>
+		/> -->
 	</div>
 </template>
 
