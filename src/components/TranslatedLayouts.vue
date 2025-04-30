@@ -82,6 +82,15 @@ export default {
 	components: {
 		"k-translated-layout" : TranslatedLayout
 	},
+	// Same data as Layouts.vue (seems to be skipped in extends)
+	data() {
+		return {
+			current: null,
+			nextIndex: null,
+			rows: this.value,
+			selected: null
+		};
+	},
 	mixins: [
 		TranslatedLayoutMixin,
 	],
