@@ -87,7 +87,7 @@ function syncLanguages(array $defaultLangLayouts, array $translationData, \Kirby
                         continue;
                     }
 
-                    $translateByDefault = true; // todo: parse this from a plugin option ?
+                    $translateByDefault = false; // todo: parse this from a plugin option ?
 
                     // Get blueprint block attributes (its translation config)
                     if ($blockBlueprint = $fieldsets->find($blockType)) {

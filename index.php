@@ -14,7 +14,7 @@ Kirby::plugin(
     info: [
         'license' => 'MIT'
     ],
-    version: '1.0.3',
+    version: '1.0.4',
     extends: [
 
     'fields' => [
@@ -94,6 +94,7 @@ Kirby::plugin(
                     
                     // Convert index keys to id keys (removed by blocksToValues() on save)
                     $translationValue[TranslatedLayoutField::BLOCKS_KEY] = array_column($translationValue[TranslatedLayoutField::BLOCKS_KEY], null, 'id');
+                    $translationValue[TranslatedLayoutField::LAYOUTS_KEY] = array_column($translationValue[TranslatedLayoutField::LAYOUTS_KEY], null, 'id');
                     
                     //$bp = getFieldBlueprint();
                     $returnLayouts = syncLanguages($returnLayouts, $translationValue, $fieldsets, $attrsFieldSet);

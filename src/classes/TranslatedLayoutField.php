@@ -135,7 +135,7 @@ class TranslatedLayoutField extends LayoutField {
                             foreach( $column['blocks'] as $blockIndex => $block){
                                 // We should have: $block.id , $block.content , $block.type, $block.isHidden
                                 $keyB = $block['id']??('block_'.$layoutIndex.'_'.$columnIndex.'_'.$blockIndex);
-                                if(isset($flatStructure['blocks'][$keyB])) {
+                                if(isset($flatStructure['blocks'][$keyB]) || isset($flatStructure['columns'][$keyB])) {
                                     // In default lang, generate new ID if numerical OR
                                     throw new LogicException("Ouch, now unique IDs can exist twice ! I can't handle this, please fix any duplicate ID in your content file. (duplicate block of type ".($block['type']??'Unknown')." with ID: ".$block['id'].").");
                                 }
@@ -150,7 +150,7 @@ class TranslatedLayoutField extends LayoutField {
                     unset($layout['columns']);
                 }
                 $keyL = $layout['id']??('layout_'.$layoutIndex);
-                if(isset($flatStructure['blocks'][$keyL]))
+                if(isset($flatStructure['blocks'][$keyL]) || isset($flatStructure['columns'][$keyL]))
                     throw new LogicException("Ouch, now unique IDs can exist twice ! I can't handle this.");
                 $flatStructure['layouts'][$keyL] = $layout; // Note: Attrs are simply copied within
             }
@@ -191,10 +191,13 @@ class TranslatedLayoutField extends LayoutField {
         $value = $this->flattenLayoutsColumnsBlocks($valueLayout);
 
         // Convert full data to stored data (more compact)
-        foreach ($value[TranslatedLayoutField::LAYOUTS_KEY] as $layoutIndex => &$layout) {
+        $layoutsIndexed = $value[TranslatedLayoutField::LAYOUTS_KEY];
+        $value[TranslatedLayoutField::LAYOUTS_KEY] = [];
+        foreach ($layoutsIndexed as $layoutIndex => $layout) {
             if (array_key_exists('attrs', $layout) && ($layout['attrs']!==[] && $layout['attrs'] !== null)) { // Changed line
                 $layout['attrs'] = $this->attrsForm($layout['attrs'])->content();
             }
+            $value[TranslatedLayoutField::LAYOUTS_KEY][] = $layout; // Save without array key
         }
         $value[TranslatedLayoutField::BLOCKS_KEY] = $this->blocksToValues($value[TranslatedLayoutField::BLOCKS_KEY] ?? [], 'content');
 
@@ -290,6 +293,7 @@ class TranslatedLayoutField extends LayoutField {
 
                 // Convert index keys to id keys (removed by blocksToValues() on save)
                 $value[static::BLOCKS_KEY] = array_column($value[static::BLOCKS_KEY], null, 'id');
+                $value[static::LAYOUTS_KEY] = array_column($value[static::LAYOUTS_KEY], null, 'id');
             }
             // We got another array format
             // Assume it's in full form-data format
@@ -409,7 +413,7 @@ class TranslatedLayoutField extends LayoutField {
                         continue;
                     }
 
-                    $translateByDefault = true; // todo: parse this from a plugin option ?
+                    $translateByDefault = false; // todo: parse this from a plugin option ?
 
                     // Translateable and translation available ?
                     if(($blockBlueprint->translate() || $translateByDefault) && array_key_exists($blockID, $flattenedLayouts['blocks'])){
