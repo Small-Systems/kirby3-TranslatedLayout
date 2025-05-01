@@ -177,9 +177,30 @@ class TranslatedLayoutField extends LayoutField {
             return parent::toStoredValue($default);
         }
 
+        // Original Kirby behaviour, modified
+        $value = $this->toFormValue($default);
+        $valueLayout = Layouts::factory($value, ['parent' => $this->model]);
 
+        // returns empty string to avoid storing empty array as string `[]`
+        // and to consistency work with `$field->isEmpty()`
+        if ($valueLayout->toArray() === []) {
+            return '';
+            return static::EMPTY_VALUE;
+        }
+
+        $value = $this->flattenLayoutsColumnsBlocks($valueLayout);
+
+        // Convert full data to stored data (more compact)
+        foreach ($value[TranslatedLayoutField::LAYOUTS_KEY] as $layoutIndex => &$layout) {
+            if (array_key_exists('attrs', $layout) && ($layout['attrs']!==[] && $layout['attrs'] !== null)) { // Changed line
+                $layout['attrs'] = $this->attrsForm($layout['attrs'])->content();
+            }
+        }
+        $value[TranslatedLayoutField::BLOCKS_KEY] = $this->blocksToValues($value[TranslatedLayoutField::BLOCKS_KEY] ?? [], 'content');
+
+        // Changed lines
         // Keep translations only.
-        $value = $this->flattenLayoutsColumnsBlocks(Layouts::factory($this->toFormValue($default), ['parent' => $this->model]));
+        //$value = $this->flattenLayoutsColumnsBlocks(Layouts::factory($this->toFormValue($default), ['parent' => $this->model]));
 
         // Original return
 		return \Kirby\Data\Json::encode($value, pretty: $this->pretty());
@@ -235,16 +256,16 @@ class TranslatedLayoutField extends LayoutField {
         
         // Format incoming raw data to flattened blocks and layouts
 
-        // Convert string to array
+        // Decode string to data
         // Ex: The value comes from the content file which only stores the translations
-        // Ex: Or we got a default value from the blueprint 
+        // Ex: Or we got a default value from the blueprint (which we haven't changed : it's the default lang value)
         if( is_string($value) ){
 
             // Simply convert the string to array
             $value   = Kirby\Data\Data::decode($value, type: 'json', fail: false);
         }
         // The value is empty : Fill with empty data
-        else if( is_null($value) ){
+        if( is_null($value) ){
             $value = static::EMPTY_VALUE;
             // Exit early
             $this->value = $value;
@@ -266,6 +287,9 @@ class TranslatedLayoutField extends LayoutField {
                 }
                 // Keep as is
                 //$value = $value;
+
+                // Convert index keys to id keys (removed by blocksToValues() on save)
+                $value[static::BLOCKS_KEY] = array_column($value[static::BLOCKS_KEY], null, 'id');
             }
             // We got another array format
             // Assume it's in full form-data format

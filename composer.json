@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "name": "daandelange/translatedlayout",
   "description": "Layout and blocks fields with embedded translation logic.",
   "type": "kirby-plugin",

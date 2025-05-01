@@ -14,7 +14,7 @@ Kirby::plugin(
     info: [
         'license' => 'MIT'
     ],
-    version: '1.0.2',
+    version: '1.0.3',
     extends: [
 
     'fields' => [
@@ -63,20 +63,21 @@ Kirby::plugin(
                 $defaultLangValue = \Kirby\Data\Data::decode($defaultLangTranslation->content()[$field->key()], type: 'json', fail: false)??[];
 
                 // Start with primary language content (fallback return)
-                $returnLayouts = \Kirby\Cms\Layouts::factory($defaultLangValue, ['parent' => $field->parent(), 'field'=>$field]);
-                $returnLayoutsArray = $returnLayouts->toArray();
+                $returnLayoutsObj = \Kirby\Cms\Layouts::factory($defaultLangValue, ['parent' => $field->parent(), 'field'=>$field]);
+                $returnLayouts = $returnLayoutsObj->toArray();
 
                 // Check translation data
                 if(
                     $translationValue && is_array($translationValue) && // Got data ?
-                    array_key_exists(TranslatedLayoutField::BLOCKS_KEY, $translationValue) && array_key_exists(TranslatedLayoutField::LAYOUTS_KEY, $translationValue) || // Got expected columns ?
-                    !is_array($translationValue[TranslatedLayoutField::BLOCKS_KEY]) && !is_array($translationValue[TranslatedLayoutField::LAYOUTS_KEY]) // Are the arrays ?
+                    array_key_exists(TranslatedLayoutField::BLOCKS_KEY, $translationValue) && array_key_exists(TranslatedLayoutField::LAYOUTS_KEY, $translationValue) && // Got expected columns ?
+                    is_array($translationValue[TranslatedLayoutField::BLOCKS_KEY]) && is_array($translationValue[TranslatedLayoutField::LAYOUTS_KEY]) // Are they arrays ?
                 ){
                     // Inject translation data
                     $bp = getFieldBlueprintSelf($field, false); // <-- unparsed !!!
                     
                     // Parse fieldsets to know translation config (from user blueprint or field defaults)
-                    $fieldsets = Fieldsets::factory($bp['fieldsets'], [
+                    $bpFieldsets = array_key_exists('fieldsets', $bp)?$bp['fieldsets']:null; // Note: null triggers default fieldset
+                    $fieldsets = Fieldsets::factory($bpFieldsets, [
                         'parent' => $field->parent(),
                         'field' => $field,
                     ]);
@@ -91,8 +92,14 @@ Kirby::plugin(
                         $attrsFieldSet = Fieldset::factory($settings);
                     }
                     
+                    // Convert index keys to id keys (removed by blocksToValues() on save)
+                    $translationValue[TranslatedLayoutField::BLOCKS_KEY] = array_column($translationValue[TranslatedLayoutField::BLOCKS_KEY], null, 'id');
+                    
                     //$bp = getFieldBlueprint();
-                    $returnLayouts = syncLanguages($returnLayoutsArray, $translationValue, $fieldsets, $attrsFieldSet);
+                    $returnLayouts = syncLanguages($returnLayouts, $translationValue, $fieldsets, $attrsFieldSet);
+                }
+                else {
+                    // Ignore: incorrect translation data
                 }
             }
 
