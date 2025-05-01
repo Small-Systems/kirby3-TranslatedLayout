@@ -14,7 +14,7 @@ Kirby::plugin(
     info: [
         'license' => 'MIT'
     ],
-    version: '1.0.4',
+    version: '1.0.5',
     extends: [
 
     'fields' => [
@@ -111,7 +111,7 @@ Kirby::plugin(
     'blueprints' => [
 
         // Todo: Possible issue = when these blocks are not registered in the user blueprint, they get added. NVM they are just defaults.
-        'fields/translatedlayoutwithfieldsetsbis' => __DIR__ . '/src/blueprints/fields/translatedlayoutwithfieldsets.yml',
+        'fields/translatedlayoutwithfieldsetsnative' => __DIR__ . '/src/blueprints/fields/translatedlayoutwithfieldsets.yml',
         'fields/translatedlayoutwithfieldsets' => function ($kirby) { // Todo: rename this to translatedlayoutwithfieldsettranslations
             // Put all static definitions in an yml file so it's easier to copy/paste/write.
             // From Kirby/Cms/Blueprint.php in function find()
