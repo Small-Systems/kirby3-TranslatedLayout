@@ -7,6 +7,7 @@ use \Kirby\Cms\Blueprint;
 use \Kirby\Cms\Fieldset;
 use \Kirby\Cms\Layouts;
 use \Kirby\Exception\LogicException;
+use \Kirby\Toolkit\V;
 
 //use \Kirby\Cms\ModelWithContent;
 //require_once( __DIR__ . '/TranslatedLayoutFieldContent.php');
@@ -199,7 +200,78 @@ class TranslatedLayoutField extends LayoutField {
             }
             $value[TranslatedLayoutField::LAYOUTS_KEY][] = $layout; // Save without array key
         }
+        // Blocks too
         $value[TranslatedLayoutField::BLOCKS_KEY] = $this->blocksToValues($value[TranslatedLayoutField::BLOCKS_KEY] ?? [], 'content');
+
+        // Remove untranslateable data
+        if(array_key_exists(static::BLOCKS_KEY, $value)){
+            foreach($value[static::BLOCKS_KEY] as $blockID => &$block){
+                $blockType = $block['type'];
+                // Build new value to only keep known fields
+                $blockContent = [];
+                if($blockFieldset = $this->fieldsets()->find($blockType)){    
+                    // Apply translation to fields within
+                    if($blockFieldset->translate()===true){
+                        // Translate block fields
+                        foreach($blockFieldset->fields() as $fieldName => $field){
+                            // Only keep when translateable and not empty
+                            if($field['translate']===true && !V::empty($value[static::BLOCKS_KEY][$blockID]['content'][$fieldName])){
+                                //if($fieldName=='alt') xdebug_break();
+                                $blockContent[$fieldName] = $value[static::BLOCKS_KEY][$blockID]['content'][$fieldName];
+                                continue;
+                            }
+                            
+                        }
+
+                        // Keep whole block
+                        continue;
+                    }
+                }
+                
+                // Keep minimal data
+                if(count($blockContent)>=1){
+                    $value[static::BLOCKS_KEY][$blockID]['content']=$blockContent;
+                }
+                // ignore unknown and untranslateable blocks in translations
+                else {
+                    unset($value[static::BLOCKS_KEY][$blockID]);
+                }
+            }
+        }
+        if(array_key_exists(static::LAYOUTS_KEY, $value)){
+            foreach($value[static::LAYOUTS_KEY] as $layoutID => &$layout){
+                // Build new value to only keep known fields
+                $settingsContent = [];
+
+                if($settingsFieldset = $this->settings()){
+
+                    // Apply translation to fields within
+                    if($settingsFieldset->translate()===true){
+                        // Translate block fields
+                        foreach($settingsFieldset->fields() as $fieldName => $field){
+
+                            // Only keep when translateable and not empty
+                            if($field['translate']===true && !V::empty($value[static::LAYOUTS_KEY][$layoutID]['attrs'][$fieldName])){
+                                $settingsContent[$fieldName] = $value[static::LAYOUTS_KEY][$layoutID]['attrs'][$fieldName];
+                                continue;
+                            }
+                        }
+
+                        // Keep whole block
+                        continue;
+                    }
+                }
+                
+                // Keep minimal data
+                if(count($settingsContent)>=1){
+                    $value[static::LAYOUTS_KEY][$layoutID]['attrs']=$settingsContent;
+                }
+                // ignore unknown and untranslateable blocks in translations
+                else {
+                    unset($value[static::LAYOUTS_KEY][$layoutID]);
+                }
+            }
+        }
 
         // Changed lines
         // Keep translations only.

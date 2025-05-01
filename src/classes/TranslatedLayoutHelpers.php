@@ -1,5 +1,7 @@
 <?php
 
+use \Kirby\Toolkit\V;
+
 // A set of helpers for handling translations
 
 
@@ -60,9 +62,10 @@ function syncLanguages(array $defaultLangLayouts, array $translationData, \Kirby
                         // Translate if needed
                         if(
                             array_key_exists('translate', $attrField) && $attrField['translate'] === true // the field translates
-                            && isset($translationData['layouts'][$layoutID]['attrs'][$fieldName]) // The translation exists
+                            && isset($translationData[TranslatedLayoutField::LAYOUTS_KEY][$layoutID]['attrs'][$fieldName]) // The translation exists
+                            && !V::empty($translationData[TranslatedLayoutField::LAYOUTS_KEY][$layoutID]['attrs'][$fieldName])// The translation is not empty
                         ){
-                            $layout['attrs'][$fieldName] = $translationData['layouts'][$layoutID]['attrs'][$fieldName];
+                            $layout['attrs'][$fieldName] = $translationData[TranslatedLayoutField::LAYOUTS_KEY][$layoutID]['attrs'][$fieldName];
                             // Todo : What if translation is empty ?
                             // !V::empty($layouts[$layoutIndex]['attrs'][$attrIndex])
 
@@ -106,7 +109,11 @@ function syncLanguages(array $defaultLangLayouts, array $translationData, \Kirby
                             // Need to translate ?
                             if($doTranslateThis){
                                 // Translation available ?
-                                if( array_key_exists($blockID, $translationData[TranslatedLayoutField::BLOCKS_KEY]) && array_key_exists($fieldKey, $translationData[TranslatedLayoutField::BLOCKS_KEY][$blockID]['content'])){
+                                if(
+                                    array_key_exists($blockID, $translationData[TranslatedLayoutField::BLOCKS_KEY]) &&
+                                    array_key_exists($fieldKey, $translationData[TranslatedLayoutField::BLOCKS_KEY][$blockID]['content']) &&
+                                    !V::empty($translationData[TranslatedLayoutField::BLOCKS_KEY][$blockID]['content'][$fieldKey]) // The translation is not empty
+                                ){
                                     // Replace the default lang block content with the translated one.
                                     $block['content'][$fieldKey] = $translationData[TranslatedLayoutField::BLOCKS_KEY][$blockID]['content'][$fieldKey];
 
